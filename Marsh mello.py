@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 class var:
-    token = 'NzY0NTA4MDQ0NzYyODA4MzMx.X4HRmQ.52dcz_DI-eHOv9sWYcpd6NnO9tc'
+    token = 'token'
     sub = 0
     ram = []
     ram_2 = []
