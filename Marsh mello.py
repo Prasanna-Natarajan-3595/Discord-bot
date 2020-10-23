@@ -10,8 +10,8 @@ class var:
     ram_2 = []
 
 
-con = psycopg2.connect(host='ec2-54-160-120-28.compute-1.amazonaws.com', database='dadferj0poae97', user='rhsnmbolspaqal',
-                       password='2d952a4cb36d5f1f0d0317a6757b4ccc9cf3b591e3a5eaf5a7951413b3dc4269')
+con = psycopg2.connect(host='es', database='s7', user='s',
+                       password='s')
 cur = con.cursor()
 client = discord.Client()
 
