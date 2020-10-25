@@ -39,13 +39,13 @@ async def on_message(message):
         msg = msg.split(' ', 1)[1]
 
         if 'newsong' in msg.lower().replace(' ', '') and var.sub == 0:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="to new song"))
+            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new song"))
             await message.channel.send(f'Name your new song {message.author.mention}')
             var.ram.clear() 
             var.sub = 1
 
         elif var.sub == 1:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="to new lyrics"))
+            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new lyrics"))
             await message.channel.send(f'Name your new lyrics {message.author.mention}')
             var.ram.append(msg.lower())
             var.sub = 2
