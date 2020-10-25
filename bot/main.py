@@ -30,7 +30,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    await client.change_presence(status = discord.Status.)
+    
     print(f"{message.channel}: {message.author}: {message.author.name}: {message.content}")
 
     if client.user.mentioned_in(message):
