@@ -1,4 +1,4 @@
-# Marshmello-Discord-bot
+# Discord-bot
 The Discord bot that is useful stores information
 
 
