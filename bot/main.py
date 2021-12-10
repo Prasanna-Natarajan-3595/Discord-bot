@@ -86,4 +86,4 @@ Ping me to talk or use @! before your text message to talk
     
     
 
-client.run(TOKEN)
+client.run(var.TOKEN)
