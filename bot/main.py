@@ -1,232 +1,89 @@
-import discord
-import psycopg2
-from datetime import datetime
 import os
 
-class var:
-    token = os.getenv("DISCORD_BOT_TOKEN")
-    host = os.getenv("HOST")
-    database = os.getenv("DB")
-    user = os.getenv("USER")
-    password = os.getenv("PASSWORD")
-    sub = 0
-    ram = []
-    ram_2 = []
+import discord
+from open_ai_chatbot import ask,append_interaction_to_chat_log
 
 
-con = psycopg2.connect(host=var.host, database=var.database, user=var.user,
-                       password=var.password)
-cur = con.cursor()
 client = discord.Client()
 
-
-
+class var:
+    TOKEN = os.getenv('DISCORD_TOKEN')
+    chat_log = None
+    normal_talk = False
 
 @client.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
-    await client.change_presence(status = discord.Status.idle, activity = discord.Activity(type=discord.ActivityType.listening, name="Alone"))
-
+    print(f'{client.user} has connected to Discord!')
+    for guild in client.guilds:
+        print(guild.name,guild.id)
+    await client.change_presence(status = discord.Status.idle)
 
 @client.event
 async def on_message(message):
-    
     print(f"{message.channel}: {message.author}: {message.author.name}: {message.content}")
-
-    if client.user.mentioned_in(message):
-
+    if message.author == client.user:
+        return
+    elif message.author.bot: 
+        return
+    
+    elif client.user.mentioned_in(message):
+        await client.change_presence(status = discord.Status.do_not_disturb)
         msg = message.content
         msg = msg.split(' ', 1)[1]
+        print(msg)
+        answer = ask(msg, var.chat_log)
+        var.chat_log = append_interaction_to_chat_log(msg, answer, var.chat_log)
+        await message.channel.send(f"{message.author.mention} {answer}")
+        await client.change_presence(status = discord.Status.idle)
+    
+    elif "david" in message.content.lower() or "ai dude" in message.content.lower():
+        await client.change_presence(status = discord.Status.do_not_disturb)
+        answer = ask(message.content, var.chat_log)
+        var.chat_log = append_interaction_to_chat_log(message.content, answer, var.chat_log)
+        await message.channel.send(f"{message.author.mention} {answer}")
+        await client.change_presence(status = discord.Status.idle)
+    
+    elif message.content.startswith('@!'):
+        msg = message.content.replace('@!','')
+        await client.change_presence(status = discord.Status.do_not_disturb)
+        answer = ask(msg, var.chat_log)
+        var.chat_log = append_interaction_to_chat_log(msg, answer, var.chat_log)
+        await message.channel.send(f"{message.author.mention} {answer}")
+        await client.change_presence(status = discord.Status.idle)
 
-        if 'newsong' in msg.lower().replace(' ', '') and var.sub == 0:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new song"))
-            await message.channel.send(f'Name your new song {message.author.mention}')
-            var.ram.clear() 
-            var.sub = 1
+    elif message.content == "^show-chat-log" or message.content == "^sh-chl":
+        await message.channel.send(var.chat_log)
 
-        elif var.sub == 1:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new lyrics"))
-            await message.channel.send(f'Name your new lyrics {message.author.mention}')
-            var.ram.append(msg.lower())
-            var.sub = 2
-
-        elif var.sub == 2:
-            await message.channel.send(f'Creating {var.ram[0]} song for {message.author.mention}')
-            var.ram.append(msg)
-            var.sub = 0
-            name = var.ram[1].split(',')
-            var.ram_2.clear()
-            for no,things in enumerate(name):
-                var.ram_2.append(f'{things} VARCHAR(255)')
-            final = str(var.ram_2).replace('[', '').replace(']', '').replace("'", "")
-            cur.execute(f"DROP TABLE IF EXISTS {var.ram[0]}")
-            try:
-                cur.execute(f"CREATE TABLE {var.ram[0]}(id SERIAL PRIMARY KEY, {final})")
-                await message.channel.send(f'Awesome {message.author.mention} your new {var.ram[0]} song created succesfully')
-                con.commit()
-                await client.change_presence(status = discord.Status.idle, activity = discord.Activity(type=discord.ActivityType.listening, name="Friends"))
-            except Exception as sa:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-        Successfull Error:```{sa}```''')
-                con.rollback()
-
-        elif 'showplaylist' in msg.lower().replace(' ', '') and var.sub == 0:
-            try:
-                cur.execute("""SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'""")
-                await message.channel.send(f'Hey {message.author.mention} these are the awesome songs in our playlist')
-                var.ram.clear()
-                for table in cur.fetchall():
-                    var.ram.append(table[0])
-                await message.channel.send(f'```{var.ram}```')
-            except Exception as e:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-                        Successfull Error:```{e}```''')
-                con.rollback()
-
-            
-        elif 'deletetable' in msg.lower().replace(' ', '') and var.sub == 0:
-            try:
-                await message.channel.send(f'Deleting {msg.split()[2]} song')
-                cur.execute(f"DROP TABLE {msg.split()[2]}")
-                await message.channel.send(f"{message.author.mention} The {msg.split()[2]} song deleted successfully")
-            except Exception as ab:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-                        Successfull Error:```{ab}```''')
-                con.rollback()
-
-        elif 'newbeat' in msg.lower().replace(' ', '') and var.sub == 0:
-             await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new beat"))
-             await message.channel.send(f'Enter the song name {message.author.mention}')
-             var.sub=4
-
-        elif var.sub == 4:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new beat song name"))
-            var.ram.clear()
-            var.ram.append(msg)
-            var.sub = 5
-            await message.channel.send(f"Enter the {msg}'s lyrics values {message.author.mention}")
-
-        elif var.sub == 5:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="new beat lyrics value"))
-             
-            var.sub=0                        
-            cur.execute(f"Select * FROM {var.ram[0]} LIMIT 0")
-            colnames = [desc[0] for desc in cur.description]
-            colnames = str(colnames[1:]).replace("'",'').replace('[','').replace(']','')
-            values = msg.split(',')
-            for things in values:
-                var.ram.append(things)       
-            try:
-                res = str(var.ram[1:])[1:-1]
-                cur.execute(f"INSERT INTO {var.ram[0]}({colnames}) VALUES({res})")
-                con.commit()
-                await message.channel.send(f'{message.author.mention} {var.ram[0]} has updated successfully')
-                await client.change_presence(status = discord.Status.idle, activity = discord.Activity(type=discord.ActivityType.listening, name="moving on"))
-             
-            except Exception as e:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-        Successfull Error:```{e}```''')
-                con.rollback()
-                
-        elif 'showtable' in msg.lower().replace(' ', '') and var.sub == 0:
-            try:
-                cur.execute(f'''SELECT * from {msg.replace(' ','').replace('show','').replace('table','')}''')
-                result = cur.fetchall();
-                await message.channel.send(f'''{message.author.mention} These are our lyrics
-```{result}```''')
-            except Exception as e:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-                        Successfull Error:```{e}```''')
-                con.rollback()
-
-
-        elif 'rollback' in msg.lower().replace(' ', '') and var.sub == 0:
-            con.rollback()
-            await message.channel.send(f'{message.author.mention} roll backed')
-
-        elif 'showcolumn' in msg.lower().replace(' ', '') and var.sub == 0:
-            cur.execute(f"Select * FROM {msg.replace(' ','').replace('show','').replace('column','')} LIMIT 0")
-            colnames = [desc[0] for desc in cur.description]
-            await message.channel.send(f'''{message.author.mention} These are the tables from {msg.replace(' ','').replace('show','').replace('column','')}
-```{colnames}```''')
-
-        elif 'deletebeat' in msg.lower().replace(' ', '') and var.sub == 0:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="delete beat"))
-             
-            await message.channel.send(f'{message.author.mention} Enter song name')
-            var.sub=7
-            var.ram.clear()
-        elif var.sub == 7:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="delete beat song name"))
-             
-            await message.channel.send(f'{message.author.mention} Enter the id value')
-            var.sub = 8
-            var.ram.append(msg)
-        elif var.sub == 8:
-            await client.change_presence(status = discord.Status.do_not_disturb, activity = discord.Activity(type=discord.ActivityType.listening, name="delete beat id"))
-             
-            var.ram.append(msg)
-            var.sub = 0
-            try:
-                await message.channel.send(f"Deleting {var.ram[0]}'s beat")
-                cur.execute(f"DELETE FROM {var.ram[0]} where id = {int(var.ram[1])}")
-                con.commit()
-                await message.channel.send(f"{message.author.mention} The {var.ram[0]} beat deleted successfully")
-                await client.change_presence(status = discord.Status.idle, activity = discord.Activity(type=discord.ActivityType.listening, name="new beat"))
-             
-
-            except Exception as e:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-                        Successfull Error:```{e}```''')
-                con.rollback()
-        elif 'calculate' in msg.lower().replace(' ', '') and var.sub == 0:
-            msg = msg.lower().replace('calculate','').replace(' ','')
-            
-            try:
-                total=0
-                var.sub=0
-                if '+' in msg:
-                    msg = msg.replace('+', ' ')
-                    msg = msg.split()
-                    for ele in range(0, len(msg)):
-                        total = total + int(msg[ele])
-                    await message.channel.send(f'{message.author.mention} Answer is : {total}')
-                elif '-' in msg:
-                    msg = msg.replace('-', ' ')
-                    msg = msg.split()
-                    total = int(msg[0]) - int(msg[1])
-                    await message.channel.send(f'{message.author.mention} Answer is : {total}')
-                elif '*' in msg:
-                    msg = msg.replace('*', ' ')
-                    msg = msg.split()
-                    total = int(msg[0]) * int(msg[1])
-                    await message.channel.send(f'{message.author.mention} Answer is : {total}')
-                elif '/' in msg:
-                    msg = msg.replace('/', ' ')
-                    msg = msg.split()
-                    total = int(msg[0]) / int(msg[1])
-                    await message.channel.send(f'{message.author.mention} Answer is : {total}')
-               
-            except Exception as e:
-                await message.channel.send(f'''{message.author.mention} an error has occured successfully
-                                        Successfull Error:```{e}```''')
-                var.sub=0
-        elif 'help' in msg.lower().replace(' ', '') and var.sub == 0:
-             await message.channel.send('''```
-new song - To create new table
-new beat - To insert values to table
-show playlist - To show all tables
-show table <TABLENAME> - To show particular table values
-show column <TABLENAME> - To show column of particular table
-delete table <TABLENAME> - To delete particular table
-delete beat - To delete particular values with id in table
-calculate <PROBLEM> - It finds the answer for it
-roll back - To rollback to previous state
-```
-''')
+    elif message.content == "^clear-chat-log" or message.content == "^cl-chl":
+        var.chat_log = None
+        await message.channel.send("Done")
+    
+    elif message.content == "^toggle-normal-talk" or message.content =="^tg-nl":
+        var.normal_talk =  not var.normal_talk
+        if var.normal_talk == True:
+            await message.channel.send(f"Toggled Mode to normal talk")
         else:
-            await message.channel.send(f'{message.author.mention} why did you mention me.')
-            
+            await message.channel.send(f"Toggled Mode to ping talk")
+    elif message.content == "^help":
+        await message.channel.send("""
+        ```
+I am a AI. My name is David.
+Ping me to talk or use @! before your text message to talk
+^toggle-normal-talk or ^tg-nl ----- Use this to talk to me directly without pinging me
+^show-chat-log or ^sh-chl --------- Use this to show all saved chat logs
+^clear-chat-log or ^cl-chl -------- Use this to clear all saved chat logs
+        ```
+        """)
 
-client.run(var.token)
-con.close()
+    elif var.normal_talk == True:
+        await client.change_presence(status = discord.Status.do_not_disturb)
+        answer = ask(message.content, var.chat_log)
+        var.chat_log = append_interaction_to_chat_log(message.content, answer, var.chat_log)
+        await message.channel.send(f"{message.author.mention} {answer}")
+        await client.change_presence(status = discord.Status.idle)
+    
+    
+    
+    
+
+client.run(TOKEN)
