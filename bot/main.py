@@ -59,10 +59,14 @@ async def on_message(message):
         await message.channel.send("Done")
     
     elif message.content == "^toggle-normal-talk" or message.content =="^tg-nl":
-        var.normal_talk =  not var.normal_talk
+        
         if var.normal_talk == True:
+            var.normal_talk =  False
+            await client.change_presence(status = discord.Status.online)
             await message.channel.send(f"Toggled Mode to normal talk")
         else:
+            var.normal_talk =  True
+            await client.change_presence(status = discord.Status.idle)
             await message.channel.send(f"Toggled Mode to ping talk")
     elif message.content == "^help":
         await message.channel.send("""
