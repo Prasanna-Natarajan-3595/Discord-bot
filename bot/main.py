@@ -11,6 +11,7 @@ class var:
     TOKEN = os.getenv('DISCORD_TOKEN')
     chat_log = None
     normal_talk = False
+    sync_toggle_normal = False
 
 @client.event
 async def on_ready():
@@ -67,8 +68,18 @@ async def on_message(message):
             await message.channel.send(f"Toggled Mode to ping talk")
     elif message.content == "^sync-chat-log" or message.content == "^sy-chl":
         github_storage_object.push(update=True,content=var.chat_log)
+        await message.channel.send(f"Synced chats")
     elif message.content == "^pull-chat-log" or message.content == "^pl-chl":
         var.chat_log = github_storage_object.pull_data()
+        await message.channel.send(f"Pulled chat log")
+    elif message.content == "^sync-toggle-normal" or message.content == "^sy-tg-nl":
+        
+        if var.sync_toggle_normal == True:
+            await message.channel.send(f"Disabled sync-toggle-normal")
+            var.sync_toggle_normal = False
+        elif var.sync_toggle_normal == False:
+            await message.channel.send(f"Enabled sync-toggle-normal")
+            var.sync_toggle_normal = True
     elif message.content == "^help":
         await message.channel.send("""
         ```
@@ -79,6 +90,7 @@ Ping me to talk or use @! (use @! to sync chat-log at every message) before your
 ^clear-chat-log or ^cl-chl -------- Use this to clear all saved chat logs
 ^sync-chat-log or ^sy-chl --------- Use this to make your bot remember
 ^pull-chat-log or ^pl-chl --------- Use this to pull chat log from github
+^sync-toggle-normal-talk or ^sy-tg-nl - Use this to enable sync on normal talk mode
         ```
         """)
 
@@ -88,6 +100,10 @@ Ping me to talk or use @! (use @! to sync chat-log at every message) before your
         var.chat_log = append_interaction_to_chat_log(message.content, answer, var.chat_log)
         
         await message.channel.send(f"{message.author.mention} {answer}")
+        if var.sync_toggle_normal == True:
+            github_storage_object.push(update=True,content=var.chat_log)
+        else:
+            pass
         await client.change_presence(status = discord.Status.idle)
     
     
