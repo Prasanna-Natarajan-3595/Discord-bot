@@ -2,9 +2,10 @@ import os
 
 import discord
 from open_ai_chatbot import ask,append_interaction_to_chat_log
-
+import github_storage
 
 client = discord.Client()
+github_storage_object = github_storage.github_store()
 
 class var:
     TOKEN = os.getenv('DISCORD_TOKEN')
@@ -14,6 +15,7 @@ class var:
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
+    print(github_storage_object.pull_data())
     for guild in client.guilds:
         print(guild.name,guild.id)
     await client.change_presence(status = discord.Status.idle)
@@ -34,13 +36,7 @@ async def on_message(message):
         answer = ask(msg, var.chat_log)
         var.chat_log = append_interaction_to_chat_log(msg, answer, var.chat_log)
         await message.channel.send(f"{message.author.mention} {answer}")
-        await client.change_presence(status = discord.Status.idle)
-    
-    elif "david" in message.content.lower() or "ai dude" in message.content.lower():
-        await client.change_presence(status = discord.Status.do_not_disturb)
-        answer = ask(message.content, var.chat_log)
-        var.chat_log = append_interaction_to_chat_log(message.content, answer, var.chat_log)
-        await message.channel.send(f"{message.author.mention} {answer}")
+        github_storage_object.push(update=True,content=var.chat_log)
         await client.change_presence(status = discord.Status.idle)
     
     elif message.content.startswith('@!'):
@@ -48,7 +44,9 @@ async def on_message(message):
         await client.change_presence(status = discord.Status.do_not_disturb)
         answer = ask(msg, var.chat_log)
         var.chat_log = append_interaction_to_chat_log(msg, answer, var.chat_log)
+
         await message.channel.send(f"{message.author.mention} {answer}")
+        github_storage_object.push(update=True,content=var.chat_log)
         await client.change_presence(status = discord.Status.idle)
 
     elif message.content == "^show-chat-log" or message.content == "^sh-chl":
@@ -71,7 +69,7 @@ async def on_message(message):
     elif message.content == "^help":
         await message.channel.send("""
         ```
-I am a AI. My name is David.
+I am a AI. My name is Marsha Nicky.
 Ping me to talk or use @! before your text message to talk
 ^toggle-normal-talk or ^tg-nl ----- Use this to talk to me directly without pinging me
 ^show-chat-log or ^sh-chl --------- Use this to show all saved chat logs
@@ -83,7 +81,9 @@ Ping me to talk or use @! before your text message to talk
         await client.change_presence(status = discord.Status.do_not_disturb)
         answer = ask(message.content, var.chat_log)
         var.chat_log = append_interaction_to_chat_log(message.content, answer, var.chat_log)
+        
         await message.channel.send(f"{message.author.mention} {answer}")
+        github_storage_object.push(update=True,content=var.chat_log)
         await client.change_presence(status = discord.Status.idle)
     
     
