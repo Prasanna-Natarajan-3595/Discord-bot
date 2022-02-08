@@ -50,7 +50,10 @@ async def on_message(message):
         await client.change_presence(status = discord.Status.idle)
 
     elif message.content == "^show-chat-log" or message.content == "^sh-chl":
-        await message.channel.send(var.chat_log)
+        chat_log_file = open("chat-log.txt","w")
+        chat_log_file.write(str(var.chat_log))
+        await message.channel.send(file=discord.File("chat-log.txt"))
+        os.remove("chat-log.txt")
 
     elif message.content == "^clear-chat-log" or message.content == "^cl-chl":
         var.chat_log = None
