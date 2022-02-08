@@ -4,7 +4,7 @@ import os
 class github_store:
     def __init__(self,file_path=None):
         if file_path == None:
-            self.file_path = "chat_log.ai"
+            self.file_path = "chat_log.txt"
         self.token = os.getenv("GITHUB_TOKEN")
         self.github_object = Github(self.token)
         self.branch = "main"
@@ -12,7 +12,7 @@ class github_store:
     
     def pull_data(self):
         contents = self.repository.get_contents(self.file_path, ref=self.branch)
-        return contents
+        return contents.decoded_content.decode()
 
     def push(self,path=None, message=None, content=None, branch=None, update=False):
 
